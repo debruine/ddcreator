@@ -162,7 +162,6 @@ server <- function(input, output, session) {
     
     datatable(level_col_data, editable = TRUE)
     
-    # TODO: save values on change to attributes
   })
   
   ## proxy saving level column data ----
