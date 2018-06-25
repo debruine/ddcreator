@@ -4,6 +4,8 @@ library(shinydashboard)
 library(DT)
 
 rawdata <- NULL
+var_data <- NULL 
+level_col_data <-NULL
 
 ui <- dashboardPage(
   dashboardHeader(title = "DDConvertor"),
@@ -12,7 +14,8 @@ ui <- dashboardPage(
     sidebarMenu(
       menuItem("Upload Data", tabName = "upload_tab"),
       menuItem("Variables", tabName = "variables_tab"),
-      menuItem("Define Levels", tabName = "define_levels_tab")
+      menuItem("Define Levels", tabName = "define_levels_tab"),
+      menuItem("Output", tabName = "output_selection")
     )
   ),
   ## Upload Data ----
@@ -62,7 +65,17 @@ ui <- dashboardPage(
           DTOutput("level_col_table")
         )
       )
-    )
+    ),
+    ## Variables ----
+    tabItem(tabName = "output_selection",
+            fluidRow(
+              box(
+                title = "Output",
+                width = 12,
+                downloadButton("output_csv", "Download CSV")
+              )
+            )
+          )
   ))
 )
 
@@ -104,7 +117,7 @@ server <- function(input, output, session) {
       }
     })
     
-    vartable <- data.frame(
+    var_data <<- data.frame(
       Column.Name = colnames,
       Description = NA,
       Data.Type = types,
@@ -112,7 +125,19 @@ server <- function(input, output, session) {
       Levels = unique_vals
     )
     
-    datatable(vartable, editable = TRUE)
+    datatable(var_data, editable = TRUE)
+  })
+  
+  ## proxy saving variable data ----
+  proxy_variable = dataTableProxy('vars_table')
+  observeEvent(input$vars_table_cell_edit,  {
+    info = input$vars_table_cell_edit
+    str(info)
+    i = info$row
+    j = info$col
+    v = info$value
+    var_data[i,j] <<- coerceValue(v, var_data[i,j])
+    replaceData(proxy_variable, var_data, resetPaging = F)
   })
   
   ## output$level_col_table ----
@@ -123,7 +148,7 @@ server <- function(input, output, session) {
     unique_desc <- unique_vals
     # TODO: get unique_desc from attributes if they exist
     
-    level_col_data <- data.frame(
+    level_col_data <<- data.frame(
       "values" = unique_vals,
       "description" = unique_desc
     )
@@ -132,6 +157,26 @@ server <- function(input, output, session) {
     
     # TODO: save values on change to attributes
   })
+  
+  ## proxy saving level column data ----
+  proxy_level_col = dataTableProxy('level_col_table')
+  observeEvent(input$level_col_table_cell_edit,  {
+    info = input$level_col_table_cell_edit
+    str(info)
+    i = info$row
+    j = info$col
+    v = info$value
+    level_col_data[i,j] <<- coerceValue(v, level_col_data[i,j])
+    replaceData(proxy_level_col, level_col_data, resetPaging = F)
+  })
+  
+  ## output$output_csv ----
+  output$output_csv <- downloadHandler(
+    filename = "SETTHIS.csv",
+    content = function(file) {
+      write.csv(var_data, file, row.names = F, quote = TRUE)
+    }
+  )
 }
 
 shinyApp(ui, server)
