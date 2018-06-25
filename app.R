@@ -5,7 +5,8 @@ library(DT)
 
 rawdata <- NULL
 var_data <- NULL 
-level_col_data <-NULL
+level_col_data <- NULL
+attribute_storage <- list()
 
 ui <- dashboardPage(
   dashboardHeader(title = "DDConvertor"),
@@ -66,13 +67,14 @@ ui <- dashboardPage(
         )
       )
     ),
-    ## Variables ----
+    ## Output options ----
     tabItem(tabName = "output_selection",
             fluidRow(
               box(
                 title = "Output",
                 width = 12,
-                downloadButton("output_csv", "Download CSV")
+                downloadButton("output_csv", "Download CSV"),
+                downloadButton("output_attributes", "Download Attributes")
               )
             )
           )
@@ -96,10 +98,10 @@ server <- function(input, output, session) {
   
   ## output$vars_table ----
   output$vars_table <- renderDataTable({
-    colnames <- names(rawdata)
+    column_names <- names(rawdata)
     
     updateSelectInput(session, "level_col_select", 
-                      label = NULL, choices = colnames,
+                      label = NULL, choices = column_names,
                       selected = NULL)
     
     types <- sapply(rawdata, class)
@@ -118,12 +120,16 @@ server <- function(input, output, session) {
     })
     
     var_data <<- data.frame(
-      Column.Name = colnames,
+      Column.Name = column_names,
       Description = NA,
       Data.Type = types,
       Unique.Values = unique_val_n,
-      Levels = unique_vals
+      Levels = unique_vals,
+      stringsAsFactors = F
     )
+    
+    attribute_storage <<- as.list(rep(NA, length(column_names)))
+    names(attribute_storage) <<- column_names
     
     datatable(var_data, editable = TRUE)
   })
@@ -150,7 +156,8 @@ server <- function(input, output, session) {
     
     level_col_data <<- data.frame(
       "values" = unique_vals,
-      "description" = unique_desc
+      "description" = as.character(unique_desc),
+      stringsAsFactors = F
     )
     
     datatable(level_col_data, editable = TRUE)
@@ -168,6 +175,9 @@ server <- function(input, output, session) {
     v = info$value
     level_col_data[i,j] <<- coerceValue(v, level_col_data[i,j])
     replaceData(proxy_level_col, level_col_data, resetPaging = F)
+    
+    # save level column data to temp storage, eventually to attributes
+    attribute_storage[input$level_col_select] <<- level_col_data
   })
   
   ## output$output_csv ----
@@ -175,6 +185,14 @@ server <- function(input, output, session) {
     filename = "SETTHIS.csv",
     content = function(file) {
       write.csv(var_data, file, row.names = F, quote = TRUE)
+    }
+  )
+  
+  ## output$output_attributes_csv ----
+  output$output_attributes <- downloadHandler(
+    filename = "stuff.csv",
+    content = function(file) {
+      write.csv(attribute_storage, file, row.names = F, quote = TRUE)
     }
   )
 }
