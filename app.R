@@ -160,7 +160,7 @@ server <- function(input, output, session) {
     replaceData(vars_proxy, var_data, resetPaging = F)
   })
   
-  ## output$level_col_table ----
+  ## output$level_col_table ---- 
   output$level_col_table <- renderDataTable({
     theCol <- input$level_col_select
 
