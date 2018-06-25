@@ -28,16 +28,19 @@ ui <- dashboardPage(
             title = "Upload Data",
             width = 12,
             p("This is a working demo and many functions do not work yet."),
-            fileInput("inFile", "CSV Data File", 
+            fileInput("inFile", "CSV/XLS(X) Data File", 
                       multiple = FALSE, width = NULL,
                       accept = c(
-                        "text/csv",
-                        "text/comma-separated-values,text/plain",
-                        ".csv"
+                        'text/csv',
+                        'text/comma-separated-values,text/plain',
+                        '.csv',
+                        '.xls',
+                        '.xlsx'
                       ), 
                       buttonLabel = "Browse...", 
                       placeholder = "No file selected"
             ),
+            checkboxInput("header", "Data file has a header", TRUE),
             DTOutput("rawdata_table")
           )
         )
@@ -88,7 +91,13 @@ server <- function(input, output, session) {
     inFile <- input$inFile
     if (is.null(inFile)) return(NULL)
     
-    rawdata <<- read.csv(inFile$datapath)
+    file_extension <- tools::file_ext(inFile$datapath)
+    if (file_extension == "csv") {
+      rawdata <<- read.csv(inFile$datapath, header = input$header)
+    } else if (file_extension %in% c("xls", "xlsx")) {
+      rawdata <<- as.data.frame(readxl::read_excel(inFile$datapath, 
+                                     col_names = input$header))
+    }
     
     # populate level attributes
     column_names <- names(rawdata)
@@ -186,7 +195,7 @@ server <- function(input, output, session) {
   
   ## output$output_csv ----
   output$output_csv <- downloadHandler(
-    filename = "SETTHIS.csv",
+    filename = "SETTHIS_metadata.csv",
     content = function(file) {
       write.csv(var_data, file, row.names = F, quote = TRUE)
     }
