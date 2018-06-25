@@ -217,17 +217,24 @@ server <- function(input, output, session) {
   output$output_rdata <- downloadHandler(
     filename= paste0(file_name, "_metadata_", gsub("-", "", Sys.Date()), ".Rdata"),
     content = function(file) {
-      rawdata <- dat()
       
       #convert missing descriptions to blank
       var_data[is.na(var_data)] <- ""
       
-      #variable labels
-      attr(rawdata, "label") <- var_data$Description
-      
-      #value labels
-      #attr(rawdata, "labels") <- 
-      save(rawdata, file)
+      #variable & value labels
+      for (i in 1:ncol(rawdata)){
+        attr(rawdata[,i], "label") <- var_data$Description[i]
+        
+        #set up value labels 
+        #TO DO: Get this working; unsure how data is being set)
+        # temp <- as.character(attribute_storage[[i]]$unique_vals)
+        # names(temp) <- attribute_storage[[i]]$description
+        # attr(rawdata[,i], "labels") <- temp
+      }
+
+
+    
+      save(rawdata, file=file)
     }
   )
   
