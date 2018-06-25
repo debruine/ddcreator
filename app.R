@@ -77,7 +77,8 @@ ui <- dashboardPage(
             title = "Output",
             width = 12,
             downloadButton("output_csv", "Download CSV"),
-            downloadButton("output_attributes", "Download Attributes (test)")
+            downloadButton("output_attributes", "Download Attributes (test)"),
+            downloadButton("output_rdata", "Download R data file (test)")
           )
         )
       )
@@ -98,6 +99,9 @@ server <- function(input, output, session) {
       rawdata <<- as.data.frame(readxl::read_excel(inFile$datapath, 
                                      col_names = input$header))
     }
+    
+    #save file name as global variable for writing
+    file_name <<- gsub(paste0("." , file_extension), "", inFile$name)
     
     # populate level attributes
     column_names <- names(rawdata)
@@ -195,7 +199,7 @@ server <- function(input, output, session) {
   
   ## output$output_csv ----
   output$output_csv <- downloadHandler(
-    filename = "SETTHIS_metadata.csv",
+    filename = paste0(file_name, "_metadata_", gsub("-", "", Sys.Date()), ".csv"),
     content = function(file) {
       write.csv(var_data, file, row.names = F, quote = TRUE)
     }
@@ -203,11 +207,31 @@ server <- function(input, output, session) {
   
   ## output$output_attributes_csv ----
   output$output_attributes <- downloadHandler(
-    filename = "stuff.csv",
+    filename = paste0(file_name, "_valuelabels_", gsub("-", "", Sys.Date()), ".csv"),
     content = function(file) {
       write.csv(attribute_storage, file, row.names = F, quote = TRUE)
     }
   )
+  
+  ## output$output_Rdata & set attributes ----
+  output$output_rdata <- downloadHandler(
+    filename= paste0(file_name, "_metadata_", gsub("-", "", Sys.Date()), ".Rdata"),
+    content = function(file) {
+      rawdata <- dat()
+      
+      #convert missing descriptions to blank
+      var_data[is.na(var_data)] <- ""
+      
+      #variable labels
+      attr(rawdata, "label") <- var_data$Description
+      
+      #value labels
+      #attr(rawdata, "labels") <- 
+      save(rawdata, file)
+    }
+  )
+  
+  
 } # end server()
 
 shinyApp(ui, server)
