@@ -226,10 +226,10 @@ server <- function(input, output, session) {
         attr(rawdata[,i], "label") <- var_data$Description[i]
         
         #set up value labels 
-        #TO DO: Get this working; unsure how data is being set)
-        # temp <- as.character(attribute_storage[[i]]$unique_vals)
-        # names(temp) <- attribute_storage[[i]]$description
-        # attr(rawdata[,i], "labels") <- temp
+        #TO DO: Get this working; unsure how data is being set
+        temp <- as.character(attribute_storage[[i]][,1])
+        names(temp) <- attribute_storage[[i]][,2]
+        attr(rawdata[,i], "labels") <- temp
       }
 
 
