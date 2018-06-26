@@ -13,12 +13,12 @@ ui <- dashboardPage(
   ## Sidebar Menu ----
   dashboardSidebar(
     sidebarMenu(
-      menuItem("Project Info", tabName = "project_tab"),
-      menuItem("Upload Data", tabName = "upload_tab"),
-      menuItem("Variables", tabName = "variables_tab"),
-      menuItem("Define Levels", tabName = "define_levels_tab"),
-      menuItem("Output", tabName = "output_tab"),
-      menuItem("Metadata Format", tabName = "format_tab")
+      menuItem("1. Project Info", tabName = "project_tab"),
+      menuItem("2. Upload Data", tabName = "upload_tab"),
+      menuItem("3. Variables", tabName = "variables_tab"),
+      menuItem("4. Category Labels", tabName = "define_levels_tab"),
+      menuItem("5. Output", tabName = "output_tab"),
+      menuItem("Help", tabName = "format_tab")
     )
   ),
   ## Upload Data ----
@@ -151,13 +151,13 @@ server <- function(input, output, session) {
     attribute_storage <<- sapply(column_names, function(x) NULL)
     
     for (theCol in column_names) {
-      unique_vals <- sort(unique(rawdata[,theCol]))
-      unique_desc <- as.character(unique_vals)
-      # TODO: get unique_desc from SPSS attributes if they exist
+      vals <- sort(unique(rawdata[,theCol]))
+      desc <- as.character(unique_vals)
+      # TODO: get value + description labels from SPSS attributes if they exist
       
       attribute_storage[[theCol]] <<- data.frame(
-        "values" = unique_vals,
-        "description" = unique_desc,
+        "values" = vals,
+        "description" = desc,
         stringsAsFactors = F
       )
     }
@@ -166,7 +166,7 @@ server <- function(input, output, session) {
   ## output$rawdata_table ----
   output$rawdata_table <- renderDataTable({
     dat()
-    datatable(rawdata)
+    datatable(rawdata, rownames = F)
   })
   
   ## output$vars_table ----
@@ -183,6 +183,10 @@ server <- function(input, output, session) {
       length(unique(x)) 
     })
     
+    missing_val_n <- apply(rawdata, 2, function(x) { 
+      length(which(is.na(x))) 
+    })
+    
     unique_vals <- apply(rawdata, 2, function(x) {
       uv <- unique(x)
       if (length(uv) < 11) {
@@ -192,24 +196,46 @@ server <- function(input, output, session) {
       }
     })
     
-    min_vals <- apply(rawdata, 2, min)
-    max_vals <- apply(rawdata, 2, max)
+    min_vals <- apply(rawdata, 2, min, na.rm = T)
+    max_vals <- apply(rawdata, 2, max, na.rm = T)
     
     var_data <<- data.frame(
+      # not editable
       variable = column_names,
-      description = NA,
-      type = types,
       unique_values = unique_val_n,
+      missing_values = missing_val_n,
+      levels = unique_vals,
+      
+      # editable - required
+      # TODO: get from SPSS description column
+      description = NA,
+      
+      # editable - optional
+      type = types,
       min = min_vals,
       max = max_vals,
-      levels = unique_vals,
-      na = NA,
-      na_values = NA,
+      na = TRUE,
+      na_values = 'NA',
       synonyms = NA,
+      
+      # arguments
       stringsAsFactors = F
     )
     
-    datatable(var_data, editable = TRUE)
+    datatable(var_data, editable = TRUE, rownames = F,
+              colnames = c(
+                'Variable',
+                '# Unique Values',
+                '# Missing Values',
+                'Levels',
+                'Description (required)',
+                'Type',
+                'Minimum Allowable',
+                'Maximum\nAllowable',
+                'Missing Allowed',
+                'Missing Values =',
+                'Synonyms'
+              ))
   })
   
   ## proxy saving variable data ----
@@ -230,7 +256,7 @@ server <- function(input, output, session) {
     
     level_col_data <<- attribute_storage[[theCol]]
     
-    datatable(level_col_data, editable = TRUE)
+    datatable(level_col_data, editable = TRUE, rownames = F)
   })
   
   ## proxy saving level column data ----
