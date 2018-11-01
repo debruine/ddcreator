@@ -51,7 +51,8 @@ server <- function(input, output, session) {
     
     file_extension <- tools::file_ext(inFile$datapath)
     if (file_extension == "csv") {
-      rawdata <<- read.csv(inFile$datapath, header = input$header)
+      rawdata <<- read.csv(inFile$datapath, header = input$header,
+                           stringsAsFactors = F)
     } else if (file_extension %in% c("xls", "xlsx")) {
       rawdata <<- as.data.frame(readxl::read_excel(inFile$datapath, 
                                                    col_names = input$header))
@@ -198,7 +199,7 @@ server <- function(input, output, session) {
     # save level column data to temp storage, eventually to attributes
     attribute_storage[[input$level_col_select]] <<- level_col_data
   })
-  
+
   ## output$output_csv ----
   output$output_csv <- downloadHandler(
     filename = paste0(file_name, "_metadata_", gsub("-", "", Sys.Date()), ".csv"),
