@@ -193,7 +193,7 @@ server <- function(input, output, session) {
     i = info$row
     j = info$col
     v = info$value
-    level_col_data[i,j] <<- isolate(DT::coerceValue(v, var_data[i,j]))
+    level_col_data[i,j] <<- isolate(DT::coerceValue(v, level_col_data[i,j]))
     #replaceData(level_col_proxy, level_col_data, resetPaging = F)
     
     # save level column data to temp storage, eventually to attributes
@@ -212,7 +212,9 @@ server <- function(input, output, session) {
   output$output_attributes <- downloadHandler(
     filename = paste0(file_name, "_valuelabels_", gsub("-", "", Sys.Date()), ".csv"),
     content = function(file) {
-      write.csv(attribute_storage, file, row.names = F, quote = TRUE)
+      temp <- do.call("rbind", attribute_storage)
+      colnames(temp) = c("description", "values") #temporary fix since these are writing out backwards
+      write.csv(temp[ , c(2,1)], file, row.names = T, quote = TRUE)
     }
   )
   
