@@ -159,11 +159,11 @@ server <- function(input, output, session) {
   
   vars_proxy = dataTableProxy('vars_table', session)
   
-  ## copy_var_to_desc_button
-  observeEvent(input$copy_var_to_desc_button, {
-    var_data[, 'description'] <<- var_data[, 'variable']
-    DT::replaceData(vars_proxy, var_data, resetPaging = F)
-  })
+  # ## copy_var_to_desc_button
+  # observeEvent(input$copy_var_to_desc_button, {
+  #   var_data[, 'description'] <<- var_data[, 'variable']
+  #   DT::replaceData(vars_proxy, var_data, resetPaging = F)
+  # })
   
   ## proxy saving variable data ----
   observeEvent(input$vars_table_cell_edit,  {
@@ -172,8 +172,8 @@ server <- function(input, output, session) {
     i = info$row
     j = info$col
     v = info$value
-    var_data[i,j] <<- v #coerceValue(v, var_data[i,j])
-    replaceData(vars_proxy, var_data, resetPaging = F)
+    var_data[i,j] <<- isolate(DT::coerceValue(v, var_data[i,j]))
+    #replaceData(vars_proxy, var_data, resetPaging = F)
   })
   
   ## output$level_col_table ---- 
@@ -193,8 +193,8 @@ server <- function(input, output, session) {
     i = info$row
     j = info$col
     v = info$value
-    level_col_data[i,j] <<- v #coerceValue(v, level_col_data[i,j])
-    replaceData(level_col_proxy, level_col_data, resetPaging = F)
+    level_col_data[i,j] <<- isolate(DT::coerceValue(v, var_data[i,j]))
+    #replaceData(level_col_proxy, level_col_data, resetPaging = F)
     
     # save level column data to temp storage, eventually to attributes
     attribute_storage[[input$level_col_select]] <<- level_col_data
